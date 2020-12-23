@@ -51,10 +51,9 @@ defmodule Day23Part2 do
   defp init_circle(list) do
     s1 = Stream.cycle(list)
     s2 = Stream.drop(s1, 1)
-    s3 = Stream.drop(s1, 2)
-    Stream.zip([s1, s2, s3])
-    |> Stream.map(fn {previous, current, next} ->
-      {current, [previous | next]}
+    Stream.zip([s1, s2])
+    |> Stream.map(fn {current, next} ->
+      {current, next}
     end)
     |> Enum.take(length(list))
     |> Map.new
@@ -64,9 +63,8 @@ defmodule Day23Part2 do
   defp pick_three(circle) do
     current = get_current(circle)
     picks = circle_take(circle, current, 3)
-    first = hd(picks)
     last = List.last(picks)
-    circle = circle_unlink(circle, first, last)
+    circle = circle_unlink(circle, current, last)
     {picks, circle}
   end
 
@@ -78,8 +76,7 @@ defmodule Day23Part2 do
     next = circle_next(circle, destination)
     first = hd(list)
     last = List.last(list)
-    circle_link_list(circle, list, destination, next)
-    |> circle_link(first, last)
+    %{circle | destination => first, last => next}
   end
 
   defp new_current(circle) do
@@ -96,43 +93,16 @@ defmodule Day23Part2 do
   end
 
   defp circle_next(circle, label) do
-    [_ | next] = Map.get(circle, label)
-    next
+    Map.get(circle, label)
   end
 
-  defp circle_link_list(circle, [elem1], prev, next) do
-    Map.put(circle, elem1, [prev | next])
-  end
-  defp circle_link_list(circle, [elem1, elem2 | tail], prev, next) do
-    circle = Map.put(circle, elem1, [prev | elem2])
-    circle_link_list(circle, [elem2 | tail], elem1, next)
-  end
-
-  defp circle_link(circle, first, last) do
-    [first_prev | _] = Map.get(circle, first)
-    [_ | last_next] = Map.get(circle, last)
-
-    [prev | _] = Map.get(circle, first_prev)
-    [_ | next] = Map.get(circle, last_next)
-
-    Map.put(circle, first_prev, [prev | first])
-    |> Map.put(last_next, [last | next])
-  end
-
-  defp circle_unlink(circle, first, last) do
-    [first_prev | _] = Map.get(circle, first)
-    [_ | last_next] = Map.get(circle, last)
-
-    [prev | _] = Map.get(circle, first_prev)
-    [_ | next] = Map.get(circle, last_next)
-
-    Map.put(circle, first_prev, [prev | last_next])
-    |> Map.put(last_next, [first_prev | next])
+  defp circle_unlink(circle, previous, last) do
+    Map.put(circle, previous, Map.get(circle, last))
   end
 
   defp circle_take(_circle, _label, 0), do: []
   defp circle_take(circle, label, n) do
-    [_ | next] = Map.get(circle, label)
+    next = Map.get(circle, label)
     [next | circle_take(circle, next, n - 1)]
   end
 
